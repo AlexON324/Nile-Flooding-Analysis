@@ -1,0 +1,107 @@
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+from plotExporter import PlotExporter
+from localLevelModel import LocalLevelModel
+from llmOptimizer import LlmOptimizer
+
+##### User Settings #####
+# Paths
+working_Dir = "C:/Users/aoneill/.spyder-py3/EDU Python/Time Series/"
+folderPath_Data = "./Data"
+folderPath_Output = "./Output/Nile"
+filePath_NileData = folderPath_Data + "/Nile.dat"
+
+# Other Settings
+exportFigures = True
+showFigures = True
+xLabel = "Year"
+yLabel = "Volume"
+
+##### Start of Code #####
+### Setup
+os.chdir(working_Dir)
+os.makedirs(folderPath_Output, exist_ok=True)
+plotExporter = PlotExporter(folderPath_Output, exportFigures, showFigures)
+
+### Read Data
+y = pd.read_csv(filePath_NileData,  header=0, names=["y"])
+y.index = range(1871, 1971, 1)
+
+#Export results
+plotExporter.CreateInitialPlot(y,"0. Volume of Nile river at Aswan 1871-1970",xLabel, yLabel)
+
+### Initialise local level model
+#note: parameter values are predefined in the book
+a1 = 0
+P1 = 10000000
+sigE = 15099
+sigN = 1469.1
+llm = LocalLevelModel(a1, P1, sigE, sigN,True,0.9)
+
+allResults = llm.CalculateIntermediates(y)
+
+### (2.1) Kalman Filter
+plotExporter.CreateFigureOnePlots(allResults,xLabel, yLabel)
+
+### (2.2) Smoothed State Variance
+plotExporter.CreateFigureTwoPlots(allResults,xLabel, yLabel)
+
+### (2.3) Disturbance Smoothing
+plotExporter.CreateFigureThreePlots(allResults,xLabel, yLabel)
+
+### (2.5) Missing Observations
+# Create missing observations dataset
+yMissing = y.copy()
+yMissing.iloc[20:40,0] = np.nan
+yMissing.iloc[60:80,0] = np.nan
+
+#Export missing observations
+plotExporter.CreateMissingObservationsPlot(yMissing, "2.5 Volume of Nile river at Aswan 1871-1970 With Missing Observations", xLabel, yLabel)
+
+#Calculate intermediate results
+allResultsMissing = llm.CalculateIntermediates(yMissing)
+
+#Export plots
+plotExporter.CreateFigureFivePlots(allResultsMissing,xLabel, yLabel)
+
+### (2.6) Forecasting
+llm.confidenceLevel = 0.5
+
+# Create forecasting dataset
+forecastPeriod = 30
+startIndex = max(y.index) + 1
+additionalY = pd.DataFrame(np.nan, index=range(startIndex,startIndex+forecastPeriod),columns=['y'], dtype='float')
+yForecast = pd.concat([y.copy(), additionalY])
+
+#Calculate intermediate results
+allResultsForecast = llm.CalculateIntermediates(yForecast)
+
+#Add confidence interval to forecast period
+for t in range(len(yForecast)):
+    index = allResultsForecast.index[t]
+    if not np.isnan(yForecast.loc[index,"y"]):
+        allResultsForecast.loc[index,"aUpperBound"] = np.nan
+        allResultsForecast.loc[index,"aLowerBound"] = np.nan
+
+#Export plots
+plotExporter.CreateFigureSixPlots(allResultsForecast,xLabel, yLabel)
+
+### (2.7) Diagnostic Plots For Standardized Prediction Errors
+# Optimize Llm
+guesses = (15000, 2000)
+method = 'BFGS'
+options = {'eps':1e-05, 'disp': True, 'maxiter':4000}
+
+llmOptimizer = LlmOptimizer(a1, P1,True,False)
+llmOptimized = llmOptimizer.ReturnOptimizedLlm(guesses, y, method, options)
+
+allResultsOptimized = llmOptimized.CalculateIntermediates(y)
+
+#Export plots
+plotExporter.CreateFigureSevenPlots(allResultsOptimized, xLabel)
+
+### (2.8) Illustrate Fitted Model Results
+plotExporter.CreateFigureEightPlots(allResultsOptimized, xLabel)
