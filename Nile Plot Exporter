@@ -1,0 +1,285 @@
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import statsmodels.api as sm
+
+class PlotExporter:
+    def __init__(self,outputPath, exportFigures, showFigures):
+        self.outputPath = outputPath
+        self.exportFigures = exportFigures
+        self.showFigures = showFigures
+
+    def ProcessPlot(self, plot, fileName):
+        if self.exportFigures:
+            plot.savefig(os.path.join(self.outputPath, fileName + '.png'), bbox_inches='tight', dpi=300)
+        if self.showFigures:
+            plot.show()
+        else:
+            plot.clf()
+
+    def CreateInitialPlot(self, data, title, xLabel, yLabel):
+        # Create initial plot
+        plt.title(title)
+        plt.scatter(data.index,data, color='black', s=0.25)
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        self.ProcessPlot(plt, title)
+
+    def CreateFigureOnePlots(self, results, xLabel, yLabel):
+        resultsWithoutT1 = results.iloc[1:]
+
+        #2.1.1
+        title = "2.1.1 Data and Filtered State"
+        plt.title(title)
+        plt.scatter(results.index, results[["y"]], color='black', label='input data')
+        plt.plot(resultsWithoutT1[["a"]], color='black', label='filtered state')
+        plt.plot(resultsWithoutT1[["aLowerBound"]], color='grey', linewidth=0.5, label='filtered state 90% confidence')
+        plt.plot(resultsWithoutT1[["aUpperBound"]], color='grey', linewidth=0.5)
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        plt.legend()
+        self.ProcessPlot(plt, title)
+
+        #2.1.2
+        title = "2.1.2 Filtered State Variance"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["P"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.1.3
+        title = "2.1.3 Prediction Errors"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["v"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.1.4
+        title = "2.1.4 Prediction Variance"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["F"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+    def CreateFigureTwoPlots(self, results, xLabel, yLabel):
+        resultsWithoutT1 = results.iloc[1:]
+        resultsWithoutTn = results.iloc[:-1]
+
+        #2.2.1
+        title = "2.2.1 Data and Smoothed Filtered State"
+        plt.title(title)
+        plt.scatter(resultsWithoutT1.index, resultsWithoutT1[["y"]], color='black', label='input data')
+        plt.plot(resultsWithoutT1[["alphaHat"]], color='black', label='smoothed filtered state')
+        plt.plot(resultsWithoutT1[["alphaHatLowerBound"]], color='grey', linewidth=0.5, label='smoothed filtered state 90% confidence')
+        plt.plot(resultsWithoutT1[["alphaHatUpperBound"]], color='grey', linewidth=0.5)
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        plt.legend()
+        self.ProcessPlot(plt, title)
+
+        #2.2.2
+        title = "2.2.2 Smoothed State Variance"
+        plt.title(title)
+        plt.plot(results[["V"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.2.3
+        title = "2.2.3 Smoothing Cumulant"
+        plt.title(title)
+        plt.plot(resultsWithoutTn[["r"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.2.4
+        title = "2.2.4 Smoothing Variance Cumulant"
+        plt.title(title)
+        plt.plot(resultsWithoutTn[["N"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+    def CreateFigureThreePlots(self, results, xLabel, yLabel):
+        #2.3.1
+        title = "2.3.1 Observation Error"
+        plt.title(title)
+        plt.plot(results[["eHat"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.3.2
+        title = "2.3.2 Observation Error Standard Deviation"
+        plt.title(title)
+        plt.plot(results[["VareYStdDev"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.3.3
+        title = "2.3.3 State Error"
+        plt.title(title)
+        plt.plot(results[["nHat"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.3.4
+        title = "2.3.4 State Error Standard Deviation"
+        plt.title(title)
+        plt.plot(results[["VarnYStdDev"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+    def CreateMissingObservationsPlot(self, data, title, xLabel, yLabel):
+        plt.title(title)
+        plt.plot(data, color='black')
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        self.ProcessPlot(plt, title)
+
+    def CreateFigureFivePlots(self, results, xLabel, yLabel):
+        resultsWithoutT1 = results.iloc[1:]
+        resultsWithoutTn = results.iloc[:-1]
+
+        #2.5.1
+        title = "2.5.1 Data and Filtered State"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["y"]], color='grey', label='input data')
+        plt.plot(resultsWithoutT1[["a"]], color='black', label='filtered state')
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        plt.legend()
+        self.ProcessPlot(plt, title)
+
+        #2.5.2
+        title = "2.5.2 Filtered State Variance"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["P"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.5.3
+        title = "2.5.3 Smoothing Cumulant"
+        plt.title(title)
+        plt.plot(results[["y"]], color='grey', label='input data')
+        plt.plot(results[["alphaHat"]], color='black', label='smoothed filtered state')
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.5.4
+        title = "2.5.4 Smoothing Variance Cumulant"
+        plt.title(title)
+        plt.plot(resultsWithoutTn[["V"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+    def CreateFigureSixPlots(self, results, xLabel, yLabel):
+        resultsWithoutT1 = results.iloc[1:]
+        
+        #2.6.1
+        title = "2.6.1 Data and Filtered State"
+        plt.title(title)
+        plt.scatter(resultsWithoutT1.index, resultsWithoutT1[["y"]], color='black', label='input data')
+        plt.plot(resultsWithoutT1[["a"]], color='black', label='state forecast')
+        plt.plot(resultsWithoutT1[["aLowerBound"]], color='grey', linewidth=0.5, label='state forecast  50% confidence')
+        plt.plot(resultsWithoutT1[["aUpperBound"]], color='grey', linewidth=0.5)
+        plt.xlabel(xLabel)
+        plt.ylabel(yLabel)
+        plt.legend()
+        self.ProcessPlot(plt, title)
+
+        #2.6.2
+        title = "2.6.2 State Variance"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["P"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.6.3
+        title = "2.6.3 Observation Forecast"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["a"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        #2.6.4
+        title = "2.6.4 Observation Forecast Variance"
+        plt.title(title)
+        plt.plot(resultsWithoutT1[["F"]], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+    def CreateFigureSevenPlots(self, results, xLabel):
+        resultsWithoutT1 = results.iloc[1:]
+
+        # 2.7.1
+        title = "2.7.1 Standardized Residuals"
+        plt.title(title)
+        plt.plot(resultsWithoutT1["e"], color='black')
+        plt.xlabel(xLabel)
+        self.ProcessPlot(plt, title)
+
+        # 2.7.2
+        title = "2.7.2 Standardized Residuals - Histogram plus estimated density"
+        plt.title(title)
+        sns.distplot(results["e"], hist=True, kde=True, 
+                    bins=int(13), color = 'black', 
+                    hist_kws={'edgecolor':'black'},
+                    kde_kws={'linewidth': 4})
+        self.ProcessPlot(plt, title)
+
+        # 2.7.3
+        title = "2.7.3 Standardized Residuals - Ordered Residuals QQ Plot"
+        fig = sm.qqplot(results["e"], line='45')
+        ax = fig.add_subplot(111)
+        ax.set_title(title)
+        self.ProcessPlot(plt, title)
+
+        # 2.7.4
+        title = "2.7.4 Standardized Residuals - Correlogram"
+        fig = sm.graphics.tsa.plot_acf(results["e"], lags=10, title=title)
+        self.ProcessPlot(fig, title)
+
+
+    def CreateFigureEightPlots(self, results, xLabel):
+        resultsWithoutTn = results.iloc[:-1]
+
+        #2.8.1
+        title = "2.8.1 Standardised Residuals"
+        plt.title(title)
+        plt.plot(resultsWithoutTn["uStar"], color='black')
+        plt.xlabel(xLabel)
+        plt.ylabel("Observation Residual u_t*")
+        plt.legend()
+        self.ProcessPlot(plt, title)
+
+
+        ##2.8.2
+        #Note: Plot created with Seaborn
+        title = "2.8.2 Density Plot and Histogram"
+        plt.title(title)
+        sns.distplot(results["uStar"], hist=True, kde=True, 
+                    bins=int(13), color = 'black', 
+                    hist_kws={'edgecolor':'black'},
+                    kde_kws={'linewidth': 4})
+        self.ProcessPlot(plt, title)
+        
+
+        #2.8.3
+        title = "2.8.3 Standardised Residuals"
+        plt.title(title)
+        plt.plot(results["rStar"], color='black')
+        plt.xlabel(xLabel)
+        plt.ylabel("Observation Residual u_t*")
+        plt.legend()
+        self.ProcessPlot(plt, title)
+
+        ##2.8.4
+        #Note: Plot created with Seaborn
+        title = "2.8.4 Density Plot and Histogram for r_t Star"
+        plt.title(title)
+        sns.distplot(results["rStar"], hist=True, kde=True, 
+                    bins=int(13), color = 'black', 
+                    hist_kws={'edgecolor':'black'},
+                    kde_kws={'linewidth': 4})
+        self.ProcessPlot(plt, title)
